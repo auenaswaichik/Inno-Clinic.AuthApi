@@ -1,8 +1,9 @@
-using Domain.Entities;
-using Domain.Interfaces.IRepositories;
-using Infrastructure.DbContexts;
+using AuthorizationApi.Entities;
+using AuthorizationApi.Interfaces.IRepositories;
+using AuthorizationApi.DbContexts;
+using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Repositories;
+namespace AuthorizationApi.Repositories;
 
 public class UserRepository : IUserRepository
 {
@@ -19,9 +20,9 @@ public class UserRepository : IUserRepository
         _context.SaveChanges();
     }
 
-    public User GetById(Guid id)
+    public async Task<User> GetByIdAsync(Guid id)
     {
-        return _context.Users.FirstOrDefault(m => m.Id == id);
+        return await _context.Users.FirstOrDefaultAsync(m => m.Id == id);
     }
 
     public User Insert(User entity)

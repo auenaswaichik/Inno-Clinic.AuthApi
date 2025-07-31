@@ -1,8 +1,8 @@
-using Domain.Entities;
+using AuthorizationApi.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Infrastructure.DbContexts.Configurations;
+namespace AuthorizationApi.DbContexts.Configurations;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {

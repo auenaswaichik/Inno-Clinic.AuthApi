@@ -1,8 +1,8 @@
-using Domain.Entities;
-using Infrastructure.DbContexts.Configurations;
+using AuthorizationApi.Entities;
+using AuthorizationApi.DbContexts.Configurations;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.DbContexts;
+namespace AuthorizationApi.DbContexts;
 
 public class AuthorizationApiDbContext : DbContext
 {

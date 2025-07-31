@@ -1,4 +1,4 @@
-namespace Domain.Exceptions;
+namespace AuthorizationApi.Exceptions;
 
 public class BadRequestException : Exception
 {
