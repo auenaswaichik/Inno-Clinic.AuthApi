@@ -31,4 +31,8 @@ public class UserRepository : IUserRepository
         _context.SaveChanges();
         return entity;
     }
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
 }
