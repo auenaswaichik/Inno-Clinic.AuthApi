@@ -6,6 +6,6 @@ namespace AuthorizationApi.Interfaces.IServices;
 public interface IKeycloakService
 {
     public Task<bool> RegisterUserAsync(RegistrationRequest request);
-    public Task<TokenResponse> SingInUserAsync(SingingInRequest request);
+    public Task<TokenResponse> SingInUserAsync(SigningInRequest request);
     public Task SingOutUserAsync(string token);
 }

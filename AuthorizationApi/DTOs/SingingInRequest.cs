@@ -1,6 +1,6 @@
 namespace AuthorizationApi.DTOs;
 
-public record SingingInRequest
+public record SigningInRequest
 {
     public string Username { get; set; }
     public string Password { get; set; }

@@ -82,7 +82,7 @@ public class KeycloakService : IKeycloakService
         return true;
     }
 
-    public async Task<TokenResponse> SingInUserAsync(SingingInRequest request)
+    public async Task<TokenResponse> SingInUserAsync(SigningInRequest request)
     {
         var data = new Dictionary<string, string>
         {
