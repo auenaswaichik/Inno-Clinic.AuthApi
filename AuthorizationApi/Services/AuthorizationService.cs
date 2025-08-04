@@ -8,13 +8,13 @@ using AuthorizationApi.Interfaces.IServices;
 
 namespace AuthorizationApi.Services;
 
-public class KeycloakService : IKeycloakService
+public class AuthorizationService : IAuthorizationService
 {
     private readonly IUserRepository _userRepository;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
 
-    public KeycloakService(IUserRepository userRepository, HttpClient httpClient, IConfiguration configuration)
+    public AuthorizationService(IUserRepository userRepository, HttpClient httpClient, IConfiguration configuration)
     {
         _userRepository = userRepository;
         _httpClient = httpClient;
@@ -42,17 +42,36 @@ public class KeycloakService : IKeycloakService
             }
         };
 
-        var createUserResponse = await _httpClient.PostAsJsonAsync($"https://{keycloakBaseUrl}/admin/realms/{realm}/users", userPayload);
+        var createUserResponse = await _httpClient.PostAsJsonAsync($"http://{keycloakBaseUrl}/admin/realms/{realm}/users", userPayload);
         if (!createUserResponse.IsSuccessStatusCode)
         {
-            throw new BadRequestException("Failed to create user in Keycloak.");
+            throw new BadRequestException(createUserResponse.StatusCode.ToString());
         }
 
-        var getUserResponse = await _httpClient.GetAsync($"https://{keycloakBaseUrl}/admin/realms/{realm}/users?username={request.Username}");
+        var getUserResponse = await _httpClient.GetAsync($"http://{keycloakBaseUrl}/admin/realms/{realm}/users?username={request.Username}");
         var usersJson = await getUserResponse.Content.ReadAsStringAsync();
         var userId = JsonDocument.Parse(usersJson).RootElement[0].GetProperty("id").GetString();
 
-        var getRolesResponse = await _httpClient.GetAsync($"https://{keycloakBaseUrl}/admin/realms/{realm}/roles/{request.Role}");
+        var clientId = _configuration["Keycloak:ClientId"];
+        var getClientsResponse = await _httpClient.GetAsync(
+            $"http://{keycloakBaseUrl}/admin/realms/{realm}/clients?clientId={clientId}"
+        );
+        var clientsJson = await getClientsResponse.Content.ReadAsStringAsync();
+
+        if (!getClientsResponse.IsSuccessStatusCode)
+            throw new Exception($"Failed to get clients: {clientsJson}");
+
+        var clientsArray = JsonDocument.Parse(clientsJson).RootElement;
+        var client = clientsArray.EnumerateArray().FirstOrDefault();
+        var internalClientId = client.GetProperty("id").GetString(); 
+
+        var getRolesResponse = await _httpClient.GetAsync($"http://{keycloakBaseUrl}/admin/realms/{realm}/clients/{internalClientId}/roles/{request.Role}");
+
+        if (!getRolesResponse.IsSuccessStatusCode)
+        {
+            throw new Exception($"Failed to get role '{request.Role}': {getRolesResponse.StatusCode}\n");
+        }
+
         var roleJson = await getRolesResponse.Content.ReadAsStringAsync();
         var roleDoc = JsonDocument.Parse(roleJson).RootElement;
 
@@ -66,18 +85,23 @@ public class KeycloakService : IKeycloakService
         };
 
         var assignRoleResponse = await _httpClient.PostAsJsonAsync(
-            $"https://{keycloakBaseUrl}/admin/realms/{realm}/users/{userId}/role-mappings/realm",
+            $"http://{keycloakBaseUrl}/admin/realms/{realm}/users/{userId}/role-mappings/clients/{internalClientId}",
             roleToAssign
         );
 
-        _userRepository.Insert(new User
+        if (!assignRoleResponse.IsSuccessStatusCode)
         {
-            Name = request.Username,
-            Email = request.Email,
-            KeycloakId = adminToken,
-            CreatedAt = DateTime.UtcNow
-        });
-        await _userRepository.SaveChangesAsync();
+            throw new Exception($"Failed to assign role '{request.Role}' to user: {assignRoleResponse.StatusCode}\n");
+        }
+
+        // _userRepository.Insert(new User
+        // {
+        //     Name = request.Username,
+        //     Email = request.Email,
+        //     KeycloakId = adminToken,
+        //     CreatedAt = DateTime.UtcNow
+        // });
+        // await _userRepository.SaveChangesAsync();
 
         return true;
     }
@@ -93,7 +117,7 @@ public class KeycloakService : IKeycloakService
             { "password", request.Password }
         };
 
-        var response = await _httpClient.PostAsync($"https://{_configuration["Keycloak:BaseUrl"]}/realms/{_configuration["Keycloak:Realm"]}/protocol/openid-connect/token", new FormUrlEncodedContent(data));
+        var response = await _httpClient.PostAsync($"http://{_configuration["Keycloak:BaseUrl"]}/realms/{_configuration["Keycloak:Realm"]}/protocol/openid-connect/token", new FormUrlEncodedContent(data));
 
         if (!response.IsSuccessStatusCode)
         {
@@ -113,7 +137,7 @@ public class KeycloakService : IKeycloakService
             { "refresh_token", refreshToken }
         };
 
-        await _httpClient.PostAsync($"{_configuration["Keycloak:BaseUrl"]}/realms/{_configuration["Keycloak:Realm"]}/protocol/openid-connect/logout", new FormUrlEncodedContent(data));
+        await _httpClient.PostAsync($"http://{_configuration["Keycloak:BaseUrl"]}/realms/{_configuration["Keycloak:Realm"]}/protocol/openid-connect/logout", new FormUrlEncodedContent(data));
     }
 
     private async Task<string> GetAdminTokenAsync()
@@ -125,7 +149,7 @@ public class KeycloakService : IKeycloakService
             { "client_secret", $"{_configuration["Keycloak:ClientSecret"]}" }
         };
 
-        var response = await _httpClient.PostAsync($"https://{_configuration["Keycloak:BaseUrl"]}/realms/master/protocol/openid-connect/token", new FormUrlEncodedContent(data));
+        var response = await _httpClient.PostAsync($"http://{_configuration["Keycloak:BaseUrl"]}/realms/{_configuration["Keycloak:Realm"]}/protocol/openid-connect/token", new FormUrlEncodedContent(data));
         var content = await response.Content.ReadAsStringAsync();
         var token = JsonDocument.Parse(content).RootElement.GetProperty("access_token").GetString();
 

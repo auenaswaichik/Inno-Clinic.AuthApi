@@ -1,14 +1,37 @@
+using AuthorizationApi.DbContexts;
+using AuthorizationApi.Interfaces.IRepositories;
 using AuthorizationApi.Interfaces.IServices;
+using AuthorizationApi.Repositories;
 using AuthorizationApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using DotNetEnv;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
+builder.Services
+    .AddDbContext<AuthorizationApiDbContext>
+    (
+        options =>
+            options.UseSqlServer
+            (
+                builder.Configuration.GetConnectionString("sqlConnection")
+            )
+    );
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+
 builder.Services.AddControllers();
-builder.Services.AddScoped<IKeycloakService, KeycloakService>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -16,19 +39,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         var keycloakBaseUrl = builder.Configuration["Keycloak:BaseUrl"];
         var realm = builder.Configuration["Keycloak:Realm"];
 
-        options.Authority = $"{keycloakBaseUrl}/realms/{realm}";
+        options.Authority = $"http://{keycloakBaseUrl}/realms/{realm}";
         options.Audience = builder.Configuration["Keycloak:ClientId"];
         options.RequireHttpsMetadata = false; 
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateAudience = true,
-            ValidateIssuer = true
+            ValidateIssuer = true,
+            RoleClaimType = "roles"
         };
     });
 
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 
