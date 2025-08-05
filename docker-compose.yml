@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=aA123456
+    ports:
+      - "5001:1433"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost,1433 -U sa -P aA123456 -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.6
     container_name: keycloak
@@ -13,7 +28,8 @@ services:
       - KC_DB_PASSWORD=keycloak
     command: start-dev
     ports:
-      - "8888:8080"
+      - "8880:8080"
+      - "8843:8443"
     depends_on:
       - keycloak-db
     networks:

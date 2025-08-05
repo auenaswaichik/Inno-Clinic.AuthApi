@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
+using AuthorizationApi.Options;
 
 Env.Load();
 
@@ -14,8 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
+builder.Services.Configure<KeycloakOptions>(builder.Configuration.GetSection("Keycloak"));
+
 builder.Services
-    .AddDbContext<AuthorizationApiDbContext>
+    .AddDbContext<AuthApiDbContext>
     (
         options =>
             options.UseSqlServer
@@ -25,8 +28,15 @@ builder.Services
     );
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddHttpClient("KeycloakClient", client =>
+{
+    var keycloakBaseUrl = builder.Configuration["Keycloak:BaseUrl"];
+    client.BaseAddress = new Uri($"{keycloakBaseUrl}");
+});
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddControllers();
 

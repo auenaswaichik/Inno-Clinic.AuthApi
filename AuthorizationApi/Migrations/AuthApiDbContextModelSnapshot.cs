@@ -4,19 +4,16 @@ using AuthorizationApi.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
 namespace AuthorizationApi.Migrations
 {
-    [DbContext(typeof(AuthorizationApiDbContext))]
-    [Migration("20250801072406_init")]
-    partial class init
+    [DbContext(typeof(AuthApiDbContext))]
+    partial class AuthApiDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

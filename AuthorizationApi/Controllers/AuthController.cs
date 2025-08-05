@@ -6,31 +6,31 @@ namespace AuthorizationApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthorizationController : ControllerBase
+public class AuthController : ControllerBase
 {
-    private readonly IAuthorizationService _authorizationService;
+    private readonly IAuthService _authService;
 
-    public AuthorizationController(IAuthorizationService authorizationService)
+    public AuthController(IAuthService authService)
     {
-        _authorizationService = authorizationService;
+        _authService = authService;
     }
 
     [HttpPost("registration")]
     public async Task<IActionResult> RegisterUser([FromBody] RegistrationRequest request)
     {
-        return Ok(await _authorizationService.RegisterUserAsync(request));
+        return Ok(await _authService.RegisterUserAsync(request));
     }
 
     [HttpPost("signing-in")]
     public async Task<IActionResult> SignInUser([FromBody] SigningInRequest request)
     {
-        return Ok(await _authorizationService.SingInUserAsync(request));
+        return Ok(await _authService.SingInUserAsync(request));
     }
 
     [HttpPost("signing-out")]
     public async Task<IActionResult> SignOutUser([FromBody] string token)
     {
-        await _authorizationService.SingOutUserAsync(token);
+        await _authService.SingOutUserAsync(token);
         return NoContent();
     }
 }

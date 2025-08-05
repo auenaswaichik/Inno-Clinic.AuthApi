@@ -4,11 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AuthorizationApi.DbContexts;
 
-public class AuthorizationApiDbContext : DbContext
+public class AuthApiDbContext : DbContext
 {
-    public AuthorizationApiDbContext(DbContextOptions<AuthorizationApiDbContext> options) : base(options) { }
+    public AuthApiDbContext(DbContextOptions<AuthApiDbContext> options) : base(options) { }
 
     public DbSet<User> Users { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

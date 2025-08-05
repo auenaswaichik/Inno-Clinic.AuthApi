@@ -7,9 +7,9 @@ namespace AuthorizationApi.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly AuthorizationApiDbContext _context;
+    private readonly AuthApiDbContext _context;
 
-    public UserRepository(AuthorizationApiDbContext context)
+    public UserRepository(AuthApiDbContext context)
     {
         _context = context;
     }
@@ -17,7 +17,6 @@ public class UserRepository : IUserRepository
     public void Delete(User entity)
     {
         _context.Users.Remove(entity);
-        _context.SaveChanges();
     }
 
     public async Task<User> GetByIdAsync(Guid id)
@@ -28,7 +27,6 @@ public class UserRepository : IUserRepository
     public User Insert(User entity)
     {
         _context.Users.Add(entity);
-        _context.SaveChanges();
         return entity;
     }
     public async Task SaveChangesAsync()
