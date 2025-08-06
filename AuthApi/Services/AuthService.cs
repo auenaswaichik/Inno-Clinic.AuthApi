@@ -30,7 +30,7 @@ public class AuthService : IAuthService
 
         var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
 
-        _httpClient.DefaultRequestHeaders.Auth = new AuthenticationHeaderValue(AuthServiceConstants.Auth_HEADER, adminToken);
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthServiceConstants.AUTHORIZATION_HEADER, adminToken);
 
         var userPayload = new
         {

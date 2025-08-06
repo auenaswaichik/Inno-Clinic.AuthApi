@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using AuthApi.DTOs;
+using AuthApi.Entities;
 
 namespace AuthApi.Interfaces.IServices;
 
