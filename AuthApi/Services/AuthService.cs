@@ -28,7 +28,7 @@ public class AuthService : IAuthService
     {
         var adminToken = await GetAdminTokenAsync();
 
-        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
 
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthConstants.AUTHORIZATION_HEADER, adminToken);
 
@@ -121,7 +121,7 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponse> SingInUserAsync(SigningInRequest request)
     {
-        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
 
         var data = new Dictionary<string, string>
         {
@@ -146,7 +146,7 @@ public class AuthService : IAuthService
 
     public async Task SingOutUserAsync(string refreshToken)
     {
-        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
 
         var data = new Dictionary<string, string>
         {
@@ -160,7 +160,7 @@ public class AuthService : IAuthService
 
     private async Task<string> GetAdminTokenAsync()
     {
-        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
 
         var data = new Dictionary<string, string>
         {

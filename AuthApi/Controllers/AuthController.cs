@@ -21,13 +21,13 @@ public class AuthController : ControllerBase
         return Ok(await _authService.RegisterUserAsync(request));
     }
 
-    [HttpPost("sign-in")]
+    [HttpPost("signin")]
     public async Task<IActionResult> SignInUser([FromBody] SigningInRequest request)
     {
         return Ok(await _authService.SingInUserAsync(request));
     }
 
-    [HttpPost("sign-out")]
+    [HttpPost("signout")]
     public async Task<IActionResult> SignOutUser([FromBody] string token)
     {
         await _authService.SingOutUserAsync(token);
