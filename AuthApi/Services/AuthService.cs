@@ -30,7 +30,7 @@ public class AuthService : IAuthService
 
         var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
 
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthServiceConstants.AUTHORIZATION_HEADER, adminToken);
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthConstants.AUTHORIZATION_HEADER, adminToken);
 
         var userPayload = new
         {
@@ -40,7 +40,7 @@ public class AuthService : IAuthService
             emailVerified = true,
             credentials = new[]
             {
-                new { type = AuthServiceConstants.USER_CREDENTIAL_PASSWORD_TYPE, value = request.Password, temporary = false }
+                new { type = AuthConstants.USER_CREDENTIAL_PASSWORD_TYPE, value = request.Password, temporary = false }
             }
         };
 
