@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AuthApi.DbContexts;
 
-public class AuthApiDbContext : DbContext
+public sealed class AuthApiDbContext : DbContext
 {
     public AuthApiDbContext(DbContextOptions<AuthApiDbContext> options) : base(options) { }
 

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace AuthApi.Entities;
 
-public class UserResponse
+public sealed class UserResponse
 {
     [JsonPropertyName("id")]
     public string Id { get; set; }

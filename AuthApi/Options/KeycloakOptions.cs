@@ -1,6 +1,6 @@
 namespace AuthApi.Options;
 
-public class KeycloakOptions
+public sealed class KeycloakOptions
 {
     public string BaseUrl { get; set; }
     public string Realm { get; set; }

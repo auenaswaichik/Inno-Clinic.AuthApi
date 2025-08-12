@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace AuthApi.DTOs;
+namespace AuthApi.Entities;
 
-public class ClientResponse
+public sealed class ClientResponse
 {
     [JsonPropertyName("id")]
     public string Id { get; set; }

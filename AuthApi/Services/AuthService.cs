@@ -28,7 +28,7 @@ public class AuthService : IAuthService
     {
         var adminToken = await GetAdminTokenAsync();
 
-        var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
 
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthConstants.AUTHORIZATION_HEADER, adminToken);
 
@@ -107,21 +107,21 @@ public class AuthService : IAuthService
             throw new BadRequestException($"Failed to assign role '{request.Role}' to user: {assignRoleResponse.StatusCode}\n");
         }
 
-        // _userRepository.Insert(new User
-        // {
-        //     Name = request.Username,
-        //     Email = request.Email,
-        //     KeycloakId = adminToken,
-        //     CreatedAt = DateTime.UtcNow
-        // });
-        // await _userRepository.SaveChangesAsync();
+        _userRepository.Insert(new User
+        {
+            Name = request.Username,
+            Email = request.Email,
+            KeycloakId = adminToken,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _userRepository.SaveChangesAsync();
 
         return true;
     }
 
     public async Task<TokenResponse> SingInUserAsync(SigningInRequest request)
     {
-        var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
 
         var data = new Dictionary<string, string>
         {
@@ -146,7 +146,7 @@ public class AuthService : IAuthService
 
     public async Task SingOutUserAsync(string refreshToken)
     {
-        var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
 
         var data = new Dictionary<string, string>
         {
@@ -160,7 +160,7 @@ public class AuthService : IAuthService
 
     private async Task<string> GetAdminTokenAsync()
     {
-        var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
+        using var _httpClient = _httpClientFactory.CreateClient("KeycloakClient");
 
         var data = new Dictionary<string, string>
         {
