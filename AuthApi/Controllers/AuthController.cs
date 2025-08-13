@@ -21,10 +21,18 @@ public class AuthController : ControllerBase
         return Ok(await _authService.RegisterUserAsync(request));
     }
 
-    [HttpPost("signin")]
-    public async Task<IActionResult> SignInUser([FromBody] SigningInRequest request)
+    [HttpGet("signin")]
+    public IActionResult SignIn()
     {
-        return Ok(await _authService.SingInUserAsync(request));
+        var url = _authService.GetAuthorizationRequestUrl();
+        return Redirect(url); 
+    }
+
+    [HttpGet("callback")]
+    public async Task<IActionResult> Callback([FromQuery] string code)
+    {
+        var tokens = await _authService.ExchangeCodeForTokenAsync(code);
+        return Ok(tokens);
     }
 
     [HttpPost("signout")]

@@ -109,40 +109,52 @@ public class AuthService : IAuthService
 
         _userRepository.Insert(new User
         {
-            Name = request.Username,
-            Email = request.Email,
-            KeycloakId = adminToken,
-            CreatedAt = DateTime.UtcNow
+           Name = request.Username,
+           Email = request.Email,
+           KeycloakId = adminToken,
+           CreatedAt = DateTime.UtcNow
         });
         await _userRepository.SaveChangesAsync();
 
         return true;
     }
 
-    public async Task<TokenResponse> SingInUserAsync(SigningInRequest request)
+    public string GetAuthorizationRequestUrl()
     {
-        using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
+        var redirectUri = Uri.EscapeDataString(_keycloakOptions.RedirectUrl);
+        var authUrl = $"{_keycloakOptions.BaseUrl}/realms/{_keycloakOptions.Realm}/protocol/openid-connect/auth" +
+                    $"?client_id={_keycloakOptions.ClientId}" +
+                    $"&response_type=code" +
+                    $"&scope=openid profile email" +
+                    $"&redirect_uri={redirectUri}";
+
+        return authUrl;
+    }
+
+    public async Task<TokenResponse> ExchangeCodeForTokenAsync(string code)
+    {
+        using var client = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
 
         var data = new Dictionary<string, string>
         {
-            { "grant_type", "password" },
+            { "grant_type", "authorization_code" },
+            { "code", code },
+            { "redirect_uri", _keycloakOptions.RedirectUrl },
             { "client_id", _keycloakOptions.ClientId },
-            { "client_secret", _keycloakOptions.ClientSecret },
-            { "username", request.Username },
-            { "password", request.Password }
+            { "client_secret", _keycloakOptions.ClientSecret }
         };
 
-        var response = await _httpClient.PostAsync($"/realms/{_keycloakOptions.Realm}/protocol/openid-connect/token", new FormUrlEncodedContent(data));
+        var response = await client.PostAsync(
+            $"/realms/{_keycloakOptions.Realm}/protocol/openid-connect/token",
+            new FormUrlEncodedContent(data));
 
         if (!response.IsSuccessStatusCode)
-        {
-            throw new UnauthorizedAccessException("Invalid username or password.");
-        }
+            throw new UnauthorizedAccessException("Code exchange failed");
 
-        var content = await response.Content.ReadAsStringAsync();
-       
-        return JsonSerializer.Deserialize<TokenResponse>(content);
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<TokenResponse>(json);
     }
+
 
     public async Task SingOutUserAsync(string refreshToken)
     {
@@ -174,9 +186,9 @@ public class AuthService : IAuthService
             new FormUrlEncodedContent(data)
         );
 
-        var adminTokenContent = JsonSerializer.Deserialize<List<AdminTokenResponse>>(await response.Content.ReadAsStringAsync());
+        var adminTokenContent = JsonSerializer.Deserialize<AdminTokenResponse>(await response.Content.ReadAsStringAsync());
 
-        var adminToken = adminTokenContent.FirstOrDefault()?.AccessToken;
+        var adminToken = adminTokenContent.AccessToken;
 
         return adminToken;
     }
