@@ -8,6 +8,8 @@ using AuthApi.Interfaces.IServices;
 using AuthApi.Options;
 using Microsoft.Extensions.Options;
 using AuthApi.Constants;
+using MassTransit;
+using AuthApi.Messages.PatientRegisteredMessages;
 
 namespace AuthApi.Services;
 
@@ -16,12 +18,14 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly KeycloakOptions _keycloakOptions;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public AuthService(IUserRepository userRepository, IHttpClientFactory httpClientFactory, IOptions<KeycloakOptions> keycloakOptions)
+    public AuthService(IUserRepository userRepository, IHttpClientFactory httpClientFactory, IOptions<KeycloakOptions> keycloakOptions, IPublishEndpoint publishEndpoint)
     {
         _keycloakOptions = keycloakOptions.Value;
         _httpClientFactory = httpClientFactory;
         _userRepository = userRepository;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<bool> RegisterUserAsync(RegistrationRequest request)
@@ -107,13 +111,24 @@ public class AuthService : IAuthService
             throw new BadRequestException($"Failed to assign role '{request.Role}' to user: {assignRoleResponse.StatusCode}\n");
         }
 
-        _userRepository.Insert(new User
+        var user = new User
         {
-           Name = request.Username,
-           Email = request.Email,
-           KeycloakId = adminToken,
-           CreatedAt = DateTime.UtcNow
-        });
+            Name = request.Username,
+            Email = request.Email,
+            KeycloakId = adminToken,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _userRepository.Insert(user);
+        
+        if (request.Role == "Patient")
+            await _publishEndpoint.Publish(new PatientRegisteredMessage()
+            {
+                Id = user.Id,
+                FirstName = request.Username,
+                Email = request.Email
+            });
+            
         await _userRepository.SaveChangesAsync();
 
         return true;

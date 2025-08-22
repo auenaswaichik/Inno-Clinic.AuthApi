@@ -9,6 +9,8 @@ using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using AuthApi.Options;
 using AuthApi.Extensions;
+using MassTransit;
+using AuthApi.Messages.UserCreatedMessages;
 
 Env.Load();
 
@@ -62,6 +64,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<UserCreatedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"]);
+            h.Password(builder.Configuration["RabbitMQ:Password"]);
+        });
+
+        cfg.ReceiveEndpoint("user-created", e =>
+        {
+            e.PrefetchCount = 32;
+            e.Durable = true;
+            e.AutoDelete = false;
+
+            e.UseInMemoryOutbox();
+            e.UseMessageRetry(r => r.Interval(5, TimeSpan.FromSeconds(10)));
+
+            e.ConfigureConsumer<UserCreatedConsumer>(context);
+        });
+    });
+});
 
 var app = builder.Build();
 
