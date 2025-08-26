@@ -7,6 +7,7 @@ namespace AuthApi.Interfaces.IServices;
 public interface IAuthService
 {
     public Task<bool> RegisterUserAsync(RegistrationRequest request);
-    public Task<TokenResponse> SingInUserAsync(SigningInRequest request);
     public Task SingOutUserAsync(string token);
+    public string GetAuthorizationRequestUrl();
+    public Task<TokenResponse> ExchangeCodeForTokenAsync(string code);
 }

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using AuthApi.Options;
+using AuthApi.Extensions;
 
 Env.Load();
 
@@ -69,6 +70,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.EnsureDatabaseMigration();
 
 app.UseHttpsRedirection();
 
