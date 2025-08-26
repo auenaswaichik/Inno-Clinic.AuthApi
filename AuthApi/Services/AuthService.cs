@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 using AuthApi.Constants;
 using MassTransit;
 using AuthApi.Messages.PatientRegisteredMessages;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AuthApi.Services;
 
@@ -113,7 +115,8 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            Name = request.Username,
+            Login = request.Username,
+            PasswordHash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(request.Password)).ToString(),
             Email = request.Email,
             KeycloakId = adminToken,
             CreatedAt = DateTime.UtcNow
@@ -125,8 +128,8 @@ public class AuthService : IAuthService
             await _publishEndpoint.Publish(new PatientRegisteredMessage()
             {
                 Id = user.Id,
-                FirstName = request.Username,
-                Email = request.Email
+                Login = user.Login,
+                Email = user.Email
             });
             
         await _userRepository.SaveChangesAsync();
