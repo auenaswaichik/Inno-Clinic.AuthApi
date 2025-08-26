@@ -12,6 +12,7 @@ using MassTransit;
 using AuthApi.Messages.PatientRegisteredMessages;
 using System.Security.Cryptography;
 using System.Text;
+using AuthApi.Enums;
 
 namespace AuthApi.Services;
 
@@ -32,6 +33,9 @@ public class AuthService : IAuthService
 
     public async Task<bool> RegisterUserAsync(RegistrationRequest request)
     {
+        if (request.Role != Roles.Patient)
+            throw new BadRequestException("Only 'Patient' role can be registered through this endpoint.");
+
         var adminToken = await GetAdminTokenAsync();
 
         using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
@@ -82,12 +86,12 @@ public class AuthService : IAuthService
         var internalClientId = clientContetn.FirstOrDefault()?.Id;
 
         var rolesResponse = await _httpClient.GetAsync(
-            $"/admin/realms/{_keycloakOptions.Realm}/clients/{internalClientId}/roles/{request.Role}"
+            $"/admin/realms/{_keycloakOptions.Realm}/clients/{internalClientId}/roles/{request.Role.ToString()}"
         );
 
         if (!rolesResponse.IsSuccessStatusCode)
         {
-            throw new NotFoundException($"Failed to get role '{request.Role}': {rolesResponse.StatusCode}\n");
+            throw new NotFoundException($"Failed to get role '{request.Role.ToString()}': {rolesResponse.StatusCode}\n");
         }
 
         var roleJson = await rolesResponse.Content.ReadAsStringAsync();
@@ -110,7 +114,7 @@ public class AuthService : IAuthService
 
         if (!assignRoleResponse.IsSuccessStatusCode)
         {
-            throw new BadRequestException($"Failed to assign role '{request.Role}' to user: {assignRoleResponse.StatusCode}\n");
+            throw new BadRequestException($"Failed to assign role '{request.Role.ToString()}' to user: {assignRoleResponse.StatusCode}\n");
         }
 
         var user = new User
@@ -124,13 +128,12 @@ public class AuthService : IAuthService
 
         _userRepository.Insert(user);
         
-        if (request.Role == "Patient")
-            await _publishEndpoint.Publish(new PatientRegisteredMessage()
-            {
-                Id = user.Id,
-                Login = user.Login,
-                Email = user.Email
-            });
+        await _publishEndpoint.Publish(new PatientRegisteredMessage()
+        {
+            Id = user.Id,
+            Login = user.Login,
+            Email = user.Email
+        });
             
         await _userRepository.SaveChangesAsync();
 

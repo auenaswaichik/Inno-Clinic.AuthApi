@@ -80,12 +80,12 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
         var internalClientId = clientContetn.FirstOrDefault()?.Id;
 
         var rolesResponse = await _httpClient.GetAsync(
-            $"/admin/realms/{_keycloakOptions.Realm}/clients/{internalClientId}/roles/{message.Role}"
+            $"/admin/realms/{_keycloakOptions.Realm}/clients/{internalClientId}/roles/{message.Role.ToString()}"
         );
 
         if (!rolesResponse.IsSuccessStatusCode)
         {
-            throw new NotFoundException($"Failed to get role '{message.Role}': {rolesResponse.StatusCode}\n");
+            throw new NotFoundException($"Failed to get role '{message.Role.ToString()}': {rolesResponse.StatusCode}\n");
         }
 
         var roleJson = await rolesResponse.Content.ReadAsStringAsync();
@@ -108,7 +108,7 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
 
         if (!assignRoleResponse.IsSuccessStatusCode)
         {
-            throw new BadRequestException($"Failed to assign role '{message.Role}' to user: {assignRoleResponse.StatusCode}\n");
+            throw new BadRequestException($"Failed to assign role '{message.Role.ToString()}' to user: {assignRoleResponse.StatusCode}\n");
         }
 
         var user = new User
