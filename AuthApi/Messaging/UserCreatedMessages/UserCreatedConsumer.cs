@@ -34,6 +34,8 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
 
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthConstants.AUTHORIZATION_HEADER, adminToken);
 
+        var tempPassword = GetRandomPassword();
+
         var userPayload = new
         {
             username = message.FirstName,
@@ -42,7 +44,7 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
             emailVerified = true,
             credentials = new[]
             {
-                new { type = AuthConstants.USER_CREDENTIAL_PASSWORD_TYPE, value = "123", temporary = true }
+                new { type = AuthConstants.USER_CREDENTIAL_PASSWORD_TYPE, value = tempPassword, temporary = true }
             }
         };
 
@@ -113,7 +115,7 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
         {
             Id = message.Id,
             Login = message.FirstName,
-            PasswordHash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("123")).ToString(),
+            PasswordHash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(tempPassword)).ToString(),
             Email = message.Email,
             KeycloakId = adminToken,
             CreatedAt = DateTime.UtcNow
@@ -123,7 +125,7 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
 
         await _userRepository.SaveChangesAsync();
     }
-    
+
     private async Task<string> GetAdminTokenAsync()
     {
         using var _httpClient = _httpClientFactory.CreateClient(AuthConstants.KEYCLOAK_CLIENT);
@@ -145,5 +147,13 @@ public sealed class UserCreatedConsumer : IConsumer<UserCreatedMessage>
         var adminToken = adminTokenContent.AccessToken;
 
         return adminToken;
+    }
+    
+    private string GetRandomPassword(int length = 8)
+    {
+        const string VALID_CHARS = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()?_-";
+        var random = new Random();
+        return new string(Enumerable.Repeat(VALID_CHARS, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 }
