@@ -9,8 +9,8 @@ RUN dotnet publish -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENV ASPNETCORE_URLS=http://+:8081
-EXPOSE 8081
+ENV ASPNETCORE_URLS=http://+:8082
+EXPOSE 8082
 # Use environment variables for connection strings
 ENV ConnectionStrings__sqlConnection=""
 ENV Serilog__WriteTo__0__Args__databaseUrl=""
