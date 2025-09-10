@@ -71,6 +71,11 @@ public class AuthService : IAuthService
         var userContent = JsonSerializer.Deserialize<List<UserResponse>>(await userResponse.Content.ReadAsStringAsync());
 
         var userId = userContent.FirstOrDefault()?.Id;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new BadRequestException("Failed to retrieve user ID after creation");
+        }
 
         var clientsResponse = await _httpClient.GetAsync(
             $"/admin/realms/{_keycloakOptions.Realm}/clients?clientId={_keycloakOptions.ClientId}"
@@ -84,6 +89,11 @@ public class AuthService : IAuthService
         var clientContetn = JsonSerializer.Deserialize<List<ClientResponse>>(await clientsResponse.Content.ReadAsStringAsync());
 
         var internalClientId = clientContetn.FirstOrDefault()?.Id;
+        
+        if (string.IsNullOrEmpty(internalClientId))
+        {
+            throw new BadRequestException($"Failed to retrieve client ID for client: {_keycloakOptions.ClientId}");
+        }
 
         var rolesResponse = await _httpClient.GetAsync(
             $"/admin/realms/{_keycloakOptions.Realm}/clients/{internalClientId}/roles/{request.Role.ToString()}"
@@ -114,7 +124,8 @@ public class AuthService : IAuthService
 
         if (!assignRoleResponse.IsSuccessStatusCode)
         {
-            throw new BadRequestException($"Failed to assign role '{request.Role.ToString()}' to user: {assignRoleResponse.StatusCode}\n");
+            var errorContent = await assignRoleResponse.Content.ReadAsStringAsync();
+            throw new BadRequestException($"Failed to assign role '{request.Role.ToString()}' to user: {assignRoleResponse.StatusCode}. Error: {errorContent}\n");
         }
 
         var user = new User
@@ -143,10 +154,10 @@ public class AuthService : IAuthService
     public string GetAuthorizationRequestUrl()
     {
         var redirectUri = Uri.EscapeDataString(_keycloakOptions.RedirectUrl);
-        var authUrl = $"{_keycloakOptions.BaseUrl}/realms/{_keycloakOptions.Realm}/protocol/openid-connect/auth" +
+        var authUrl = $"{_keycloakOptions.LocalHostUrl}/realms/{_keycloakOptions.Realm}/protocol/openid-connect/auth" +
                     $"?client_id={_keycloakOptions.ClientId}" +
                     $"&response_type=code" +
-                    $"&scope=openid profile email" +
+                    $"&scope=openid profile email roles" +
                     $"&redirect_uri={redirectUri}";
 
         return authUrl;
@@ -162,7 +173,8 @@ public class AuthService : IAuthService
             { "code", code },
             { "redirect_uri", _keycloakOptions.RedirectUrl },
             { "client_id", _keycloakOptions.ClientId },
-            { "client_secret", _keycloakOptions.ClientSecret }
+            { "client_secret", _keycloakOptions.ClientSecret },
+            { "scope", "openid profile email roles" }
         };
 
         var response = await client.PostAsync(
@@ -173,6 +185,10 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Code exchange failed");
 
         var json = await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine(json);
+
+        var a = 1;
         return JsonSerializer.Deserialize<TokenResponse>(json);
     }
 

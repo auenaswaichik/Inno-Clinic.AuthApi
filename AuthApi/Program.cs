@@ -11,12 +11,26 @@ using AuthApi.Options;
 using AuthApi.Extensions;
 using MassTransit;
 using AuthApi.Messages.UserCreatedMessages;
-
-Env.Load();
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Env.Load();
+
 builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000")
+                  .AllowCredentials()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
 
 builder.Services.Configure<KeycloakOptions>(builder.Configuration.GetSection("Keycloak"));
 
@@ -35,13 +49,16 @@ builder.Services.AddHttpClient();
 builder.Services.AddHttpClient("KeycloakClient", client =>
 {
     var keycloakBaseUrl = builder.Configuration["Keycloak:BaseUrl"];
-    client.BaseAddress = new Uri($"{keycloakBaseUrl}");
+    client.BaseAddress = new Uri(keycloakBaseUrl);
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(opts =>
+{
+    opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -52,15 +69,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         var keycloakBaseUrl = builder.Configuration["Keycloak:BaseUrl"];
         var realm = builder.Configuration["Keycloak:Realm"];
 
-        options.Authority = $"http://{keycloakBaseUrl}/realms/{realm}";
+        options.Authority = $"{keycloakBaseUrl}/realms/{realm}";
         options.Audience = builder.Configuration["Keycloak:ClientId"];
-        options.RequireHttpsMetadata = false; 
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateAudience = true,
-            ValidateIssuer = true,
-            RoleClaimType = "roles"
-        };
+        options.RequireHttpsMetadata = false;
     });
 
 builder.Services.AddAuthorization();
@@ -93,11 +104,15 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
+app.UseCors("AllowAll");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRouting();
 
 app.EnsureDatabaseMigration();
 

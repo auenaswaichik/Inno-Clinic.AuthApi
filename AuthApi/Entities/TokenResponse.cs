@@ -12,4 +12,7 @@ public sealed class TokenResponse
 
     [JsonPropertyName("refresh_token")]
     public string RefreshToken { get; set; }
+
+    [JsonPropertyName("id_token")]
+    public string IdToken { get; set; }
 }

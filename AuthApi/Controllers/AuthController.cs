@@ -25,14 +25,35 @@ public class AuthController : ControllerBase
     public IActionResult SignIn()
     {
         var url = _authService.GetAuthorizationRequestUrl();
-        return Redirect(url); 
+        return Redirect(url);
     }
 
     [HttpGet("callback")]
     public async Task<IActionResult> Callback([FromQuery] string code)
     {
         var tokens = await _authService.ExchangeCodeForTokenAsync(code);
-        return Ok(tokens);
+
+        if (!string.IsNullOrWhiteSpace(tokens?.AccessToken))
+        {
+            Response.Cookies.Append("access_token", tokens.AccessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/",
+                Expires = DateTimeOffset.UtcNow.AddSeconds(tokens.ExpiresIn > 0 ? tokens.ExpiresIn : 3600)
+            });
+            Response.Cookies.Append("id_token", tokens.AccessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/",
+                Expires = DateTimeOffset.UtcNow.AddSeconds(tokens.ExpiresIn > 0 ? tokens.ExpiresIn : 3600)
+            });
+        }
+
+        return Redirect("http://localhost:3000");
     }
 
     [HttpPost("signout")]
@@ -40,5 +61,10 @@ public class AuthController : ControllerBase
     {
         await _authService.SingOutUserAsync(token);
         return NoContent();
+    }
+    [HttpGet("userinfo")]
+    public async Task<IActionResult> GetUserInfo()
+    {
+        return Ok(new {cookies = Request.Cookies.TryGetValue("id_token", out var id_token) ? id_token : "No id token cookie found"});
     }
 }
